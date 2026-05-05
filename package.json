@@ -1,0 +1,7 @@
+{
+  "name": "pgy_k2wmgh_fsharp_omega",
+  "version": "1.0.0",
+  "devDependencies": {
+    "esbuild": "^0.19.9"
+  }
+}
