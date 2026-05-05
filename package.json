@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "devDependencies": {
     "esbuild": "^0.19.9"
+  },
+  "dependencies": {
+    "firebase": "^12.12.1"
   }
 }
