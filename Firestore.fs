@@ -42,6 +42,29 @@ module Firestore =
             promise?catch(fun e -> err (System.Exception(string e))) |> ignore
         )
 
+    let getUrlByOriginal (originalUrl: string) : Async<UrlRecord option> =
+        Async.FromContinuations(fun (ok, err, _) ->
+            let db = getDb ()
+            let collection = db?collection("urls")
+            let query: obj = JS.Inline("$0.where($1, $2, $3)", collection, "originalUrl", "==", originalUrl)
+            let promise = query?limit(1)?get()
+            promise?``then``(fun (snapshot: obj) ->
+                if unbox<bool> snapshot?empty then
+                    ok None
+                else
+                    let docs = snapshot?docs
+                    let doc = docs?("0")
+                    let data = doc?data()
+                    let record = {
+                        ShortCode = unbox (doc?id)
+                        OriginalUrl = unbox (data?originalUrl)
+                        CreatedAt = if not (isNull (data?createdAt)) then unbox (data?createdAt) else 0.0
+                    }
+                    ok (Some record)
+            ) |> ignore
+            promise?catch(fun e -> err (System.Exception(string e))) |> ignore
+        )
+
     let getUrlByCode (shortCode: string) : Async<UrlRecord option> =
         Async.FromContinuations(fun (ok, err, _) ->
             let db = getDb ()

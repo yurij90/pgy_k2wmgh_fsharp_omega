@@ -131,52 +131,40 @@ function showPage(page){
 }
 function handleShortenUrl(){
   return Delay(() => {
-    const url=Trim(rvHomeUrl().Get());
-    if(IsNullOrWhiteSpace(url)){
-      rvIsError().Set(true);
-      rvResultLabel().Set("! Please enter a URL");
-      rvShowResult().Set(true);
-      return Zero();
-    }
-    else if(!isValidUrl(url)){
-      rvIsError().Set(true);
-      rvResultLabel().Set("! URL must start with http:// or https://");
-      rvShowResult().Set(true);
-      return Zero();
-    }
-    else {
-      const duplicate=tryFind((r) => r.OriginalUrl==url, rvUrlList().u0076ar.Get());
-      if(duplicate==null){
-        rvShortenBtnLoading().Set(true);
-        return Combine(TryWith(Delay(() => Bind(addUrl(url), (a) => {
-          const shortUrl=baseUrl()+a;
+    if(!rvShortenBtnLoading().Get()){
+      const url=Trim(rvHomeUrl().Get());
+      return IsNullOrWhiteSpace(url)?(rvIsError().Set(true),rvResultLabel().Set("! Please enter a URL"),rvShowResult().Set(true),Zero()):!isValidUrl(url)?(rvIsError().Set(true),rvResultLabel().Set("! URL must start with http:// or https://"),rvShowResult().Set(true),Zero()):(rvShortenBtnLoading().Set(true),Combine(TryWith(Delay(() => Bind(getUrlByOriginal(url), (a) => {
+        if(a==null)return Bind(addUrl(url), (a_1) => {
+          rvUrlList().Append(New(a_1, url, eval("Date.now()")));
+          const shortUrl=baseUrl()+a_1;
           rvShortUrl().Set(shortUrl);
           rvIsError().Set(false);
           rvResultLabel().Set("\u2713 Short URL created!");
           rvShowResult().Set(true);
           showToast("URL shortened successfully!", false);
           return Zero();
-        })), (a) => {
-          rvIsError().Set(true);
-          rvResultLabel().Set("! "+a.message);
+        });
+        else {
+          const existing=a.$0;
+          rvShortUrl().Set(baseUrl()+existing.ShortCode);
+          rvIsError().Set(false);
+          rvResultLabel().Set("\u2713 URL already shortened!");
           rvShowResult().Set(true);
-          showToast("Error: "+a.message, true);
+          showToast("This URL was already shortened!", false);
           return Zero();
-        }), Delay(() => {
-          rvShortenBtnLoading().Set(false);
-          return Zero();
-        }));
-      }
-      else {
-        const existing=duplicate.$0;
-        rvShortUrl().Set(baseUrl()+existing.ShortCode);
-        rvIsError().Set(false);
-        rvResultLabel().Set("\u2713 URL already shortened!");
+        }
+      })), (a) => {
+        rvIsError().Set(true);
+        rvResultLabel().Set("! "+a.message);
         rvShowResult().Set(true);
-        showToast("This URL was already shortened!", false);
+        showToast("Error: "+a.message, true);
         return Zero();
-      }
+      }), Delay(() => {
+        rvShortenBtnLoading().Set(false);
+        return Zero();
+      })));
     }
+    else return Zero();
   });
 }
 function resultBoxClass(){
@@ -240,6 +228,9 @@ function rvUrlList(){
 function rvCurrentPage(){
   return _c.rvCurrentPage;
 }
+function rvShortenBtnLoading(){
+  return _c.rvShortenBtnLoading;
+}
 function rvIsError(){
   return _c.rvIsError;
 }
@@ -248,9 +239,6 @@ function rvShowResult(){
 }
 function isValidUrl(url){
   return StartsWith(url, "http://")||StartsWith(url, "https://")||StartsWith(url, "ftp://");
-}
-function rvShortenBtnLoading(){
-  return _c.rvShortenBtnLoading;
 }
 function rvShortUrl(){
   return _c.rvShortUrl;
@@ -331,6 +319,22 @@ function getAllUrls(){
         results=FSharpList.Cons(New(doc.id, data.originalUrl, !(data.createdAt==null)?data.createdAt:0), results);
       }
       ok(rev(results));
+    });
+    promise["catch"]((e) => {
+      err(new Error(String(e)));
+    });
+  });
+}
+function getUrlByOriginal(originalUrl){
+  return FromContinuations((ok, err) => {
+    const promise=getDb().collection("urls").where("originalUrl", "==", originalUrl).limit(1).get();
+    promise.then((snapshot) => {
+      if(snapshot.empty)ok(null);
+      else {
+        const doc=snapshot.docs["0"];
+        const data=doc.data();
+        ok(Some(New(doc.id, data.originalUrl, !(data.createdAt==null)?data.createdAt:0)));
+      }
     });
     promise["catch"]((e) => {
       err(new Error(String(e)));
@@ -1172,23 +1176,7 @@ class EventQ extends TemplateHole {
     this.fillWith=fillWith;
   }
 }
-function tryFind(ok, s){
-  const e=Get(s);
-  try {
-    let r;
-    r=null;
-    while(r==null&&e.MoveNext())
-      {
-        const x=e.Current;
-        if(ok(x))r=Some(x);
-      }
-    return r;
-  }
-  finally {
-    const _1=e;
-    if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
-  }
-}
+class View { }
 function delay(f){
   return{GetEnumerator:() => Get(f())};
 }
@@ -1384,7 +1372,6 @@ function exists(p, s){
     if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
   }
 }
-class View { }
 function rev(l){
   let res, r;
   res=FSharpList.Empty;
@@ -2558,24 +2545,6 @@ function InsertAt(parent, pos, node){
 function RemoveNode(parent, el){
   if(el.parentNode===parent)parent.removeChild(el);
 }
-function Get(x){
-  return x instanceof Array?ArrayEnumerator(x):Equals(typeof x, "string")?StringEnumerator(x):x.GetEnumerator();
-}
-function ArrayEnumerator(s){
-  return new T(0, null, (e) => {
-    const i=e.s;
-    return i<length(s)&&(e.c=get(s, i),e.s=i+1,true);
-  }, void 0);
-}
-function StringEnumerator(s){
-  return new T(0, null, (e) => {
-    const i=e.s;
-    return i<s.length&&(e.c=s[i],e.s=i+1,true);
-  }, void 0);
-}
-function Get0(x){
-  return x instanceof Array?ArrayEnumerator(x):Equals(typeof x, "string")?StringEnumerator(x):"GetEnumerator0"in x?x.GetEnumerator0():x.GetEnumerator();
-}
 function Map(fn, a){
   return CreateLazy(() => Map_1(fn, a()));
 }
@@ -2662,12 +2631,33 @@ class Attr {
   $0;
   $1;
 }
+function Get(x){
+  return x instanceof Array?ArrayEnumerator(x):Equals(typeof x, "string")?StringEnumerator(x):x.GetEnumerator();
+}
+function ArrayEnumerator(s){
+  return new T(0, null, (e) => {
+    const i=e.s;
+    return i<length(s)&&(e.c=get(s, i),e.s=i+1,true);
+  }, void 0);
+}
+function StringEnumerator(s){
+  return new T(0, null, (e) => {
+    const i=e.s;
+    return i<s.length&&(e.c=s[i],e.s=i+1,true);
+  }, void 0);
+}
+function Get0(x){
+  return x instanceof Array?ArrayEnumerator(x):Equals(typeof x, "string")?StringEnumerator(x):"GetEnumerator0"in x?x.GetEnumerator0():x.GetEnumerator();
+}
 class T extends Object_1 {
   s;
   c;
   n;
   d;
   e;
+  Dispose(){
+    if(this.d)this.d(this);
+  }
   MoveNext(){
     const m=this.n(this);
     this.e=m?1:2;
@@ -2675,9 +2665,6 @@ class T extends Object_1 {
   }
   get Current(){
     return this.e===1?this.c:this.e===0?FailWith("Enumeration has not started. Call MoveNext."):FailWith("Enumeration already finished.");
-  }
-  Dispose(){
-    if(this.d)this.d(this);
   }
   constructor(s, c, n, d){
     super();

@@ -85,37 +85,41 @@ module Client =
 
     let handleShortenUrl () =
         async {
-            let url = rvHomeUrl.Value.Trim()
-            if System.String.IsNullOrWhiteSpace url then
-                rvIsError.Value <- true
-                rvResultLabel.Value <- "! Please enter a URL"
-                rvShowResult.Value <- true
-            elif not (isValidUrl url) then
-                rvIsError.Value <- true
-                rvResultLabel.Value <- "! URL must start with http:// or https://"
-                rvShowResult.Value <- true
-            else
-                // Check for duplicate URL in existing list
-                let duplicate =
-                    rvUrlList.Value
-                    |> Seq.tryFind (fun r -> r.OriginalUrl = url)
-                match duplicate with
-                | Some existing ->
-                    rvShortUrl.Value <- baseUrl + existing.ShortCode
-                    rvIsError.Value <- false
-                    rvResultLabel.Value <- "✓ URL already shortened!"
+            if not rvShortenBtnLoading.Value then
+                let url = rvHomeUrl.Value.Trim()
+                if System.String.IsNullOrWhiteSpace url then
+                    rvIsError.Value <- true
+                    rvResultLabel.Value <- "! Please enter a URL"
                     rvShowResult.Value <- true
-                    showToast "This URL was already shortened!" false
-                | None ->
+                elif not (isValidUrl url) then
+                    rvIsError.Value <- true
+                    rvResultLabel.Value <- "! URL must start with http:// or https://"
+                    rvShowResult.Value <- true
+                else
                     rvShortenBtnLoading.Value <- true
                     try
-                        let! shortCode = Firestore.addUrl url
-                        let shortUrl = baseUrl + shortCode
-                        rvShortUrl.Value <- shortUrl
-                        rvIsError.Value <- false
-                        rvResultLabel.Value <- "✓ Short URL created!"
-                        rvShowResult.Value <- true
-                        showToast "URL shortened successfully!" false
+                        // Check for duplicate URL in database
+                        let! duplicate = Firestore.getUrlByOriginal url
+                        match duplicate with
+                        | Some existing ->
+                            rvShortUrl.Value <- baseUrl + existing.ShortCode
+                            rvIsError.Value <- false
+                            rvResultLabel.Value <- "✓ URL already shortened!"
+                            rvShowResult.Value <- true
+                            showToast "This URL was already shortened!" false
+                        | None ->
+                            let! shortCode = Firestore.addUrl url
+                            rvUrlList.Add {
+                                ShortCode = shortCode
+                                OriginalUrl = url
+                                CreatedAt = JS.Eval("Date.now()") :?> float
+                            }
+                            let shortUrl = baseUrl + shortCode
+                            rvShortUrl.Value <- shortUrl
+                            rvIsError.Value <- false
+                            rvResultLabel.Value <- "✓ Short URL created!"
+                            rvShowResult.Value <- true
+                            showToast "URL shortened successfully!" false
                     with ex ->
                         rvIsError.Value <- true
                         rvResultLabel.Value <- "! " + ex.Message
