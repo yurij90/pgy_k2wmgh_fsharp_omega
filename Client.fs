@@ -14,8 +14,8 @@ module Client =
 
     // --- State ---
     let rvCurrentPage = Var.Create "home"
-    let rvIsHomeActive = rvCurrentPage.View.Map (fun p -> if p = "home" then "active" else "")
-    let rvIsAdminActive = rvCurrentPage.View.Map (fun p -> if p = "admin" then "active" else "")
+    let rvIsHomeActive = rvCurrentPage.View.Map (fun p -> if p = "home" then "nav-link active" else "nav-link")
+    let rvIsAdminActive = rvCurrentPage.View.Map (fun p -> if p = "admin" then "nav-link active" else "nav-link")
 
     // Home page state
     let rvHomeUrl = Var.Create ""
@@ -205,10 +205,8 @@ module Client =
             if show then "confirm-overlay visible" else "confirm-overlay"
         )
 
-    let confirmMessage =
-        rvConfirmUrl.View.Map (fun url ->
-            "Are you sure you want to delete this URL?<br/><br/><code>" + url + "</code>"
-        )
+    let confirmUrl =
+        rvConfirmUrl.View.Map (fun url -> url)
 
     // --- Admin table ---
     let renderAdminTable () =
@@ -312,7 +310,7 @@ module Client =
             // Confirm dialog
             .ConfirmOverlayClass(attr.classDyn confirmOverlayClass)
             .ConfirmTitle("Confirm Delete")
-            .ConfirmMessage(confirmMessage)
+            .ConfirmUrl(confirmUrl)
             .ConfirmBtnText("Delete")
             .CancelConfirm(fun _ -> rvShowConfirm.Value <- false)
             .ConfirmAction(fun _ -> handleConfirmDelete () |> Async.Start)

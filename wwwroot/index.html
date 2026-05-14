@@ -116,26 +116,34 @@
             gap: 8px;
         }
 
-        .nav-link {
-            padding: 8px 18px;
-            border-radius: var(--radius-sm);
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-weight: 500;
+        a.nav-link {
+            padding: 8px 22px;
+            border-radius: 20px;
+            color: var(--text-secondary) !important;
+            text-decoration: none !important;
+            font-weight: 600;
             font-size: 14px;
             transition: all var(--transition);
             cursor: pointer;
             user-select: none;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            display: inline-block;
         }
 
-        .nav-link:hover {
-            color: var(--text-primary);
-            background: rgba(255,255,255,0.08);
+        a.nav-link:hover {
+            color: var(--text-primary) !important;
+            background: var(--bg-card-hover);
+            border-color: var(--text-muted);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
-        .nav-link.active {
-            color: var(--accent);
-            background: var(--accent-glow);
+        a.nav-link.active {
+            color: #ffffff !important;
+            background: var(--accent);
+            border-color: var(--accent-hover);
+            box-shadow: 0 2px 12px var(--accent-glow);
         }
 
         /* Main container */
@@ -611,13 +619,29 @@
 
         .confirm-dialog p {
             color: var(--text-secondary);
-            margin-bottom: 24px;
+            margin-bottom: 16px;
+        }
+
+        .confirm-dialog .confirm-url {
+            display: block;
+            margin-bottom: 28px;
+            padding: 10px 14px;
+            background: var(--accent-glow);
+            border: 1px solid rgba(108, 92, 231, 0.2);
+            border-radius: var(--radius-sm);
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            word-break: break-all;
+            text-align: left;
         }
 
         .confirm-actions {
             display: flex;
             gap: 12px;
             justify-content: center;
+            margin-top: 24px;
         }
 
         @keyframes fadeIn {
@@ -765,7 +789,8 @@
         <div class="confirm-overlay" ws-attr="ConfirmOverlayClass">
             <div class="confirm-dialog">
                 <h3 ws-replace="ConfirmTitle">Confirm Delete</h3>
-                <p ws-replace="ConfirmMessage">Are you sure you want to delete this URL?</p>
+                <p>Are you sure you want to delete this URL?</p>
+                <code class="confirm-url" ws-replace="ConfirmUrl">https://example.com</code>
                 <div class="confirm-actions">
                     <button class="btn btn-outline" ws-onclick="CancelConfirm">Cancel</button>
                     <button class="btn btn-danger" ws-onclick="ConfirmAction">

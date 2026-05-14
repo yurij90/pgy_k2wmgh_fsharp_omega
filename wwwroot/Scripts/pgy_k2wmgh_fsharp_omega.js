@@ -58,7 +58,7 @@ function Main(){
   const this_10=(this_9.h.push(new Elt("admintable", A)),this_9);
   const this_11=(this_10.h.push(new Attribute("confirmoverlayclass", C)),this_10);
   const this_12=(this_11.h.push(new Text("confirmtitle", "Confirm Delete")),this_11);
-  const this_13=(this_12.h.push(new TextView("confirmmessage", confirmMessage())),this_12);
+  const this_13=(this_12.h.push(new TextView("confirmurl", confirmUrl())),this_12);
   const t_5=(this_13.h.push(new Text("confirmbtntext", "Delete")),this_13);
   const t_6=(t_5.h.push(EventQ2(t_5.k, "cancelconfirm", () => t_5.i, () => {
     rvShowConfirm().Set(false);
@@ -98,8 +98,8 @@ function refreshUrlList(){
     }));
   });
 }
-function confirmMessage(){
-  return _c.confirmMessage;
+function confirmUrl(){
+  return _c.confirmUrl;
 }
 function refreshBtnText(){
   return _c.refreshBtnText;
@@ -1007,7 +1007,7 @@ let _c=Lazy((_i) => class $StartupCode_Client {
   static {
     _c=_i(this);
   }
-  static confirmMessage;
+  static confirmUrl;
   static confirmOverlayClass;
   static refreshBtnText;
   static shortenBtnText;
@@ -1033,8 +1033,8 @@ let _c=Lazy((_i) => class $StartupCode_Client {
   static rvCurrentPage;
   static {
     this.rvCurrentPage=_c_2.Create_1("home");
-    this.rvIsHomeActive=Map((p) => p=="home"?"active":"", rvCurrentPage().View);
-    this.rvIsAdminActive=Map((p) => p=="admin"?"active":"", rvCurrentPage().View);
+    this.rvIsHomeActive=Map((p) => p=="home"?"nav-link active":"nav-link", rvCurrentPage().View);
+    this.rvIsAdminActive=Map((p) => p=="admin"?"nav-link active":"nav-link", rvCurrentPage().View);
     this.rvHomeUrl=_c_2.Create_1("");
     this.rvShortUrl=_c_2.Create_1("");
     this.rvShowResult=_c_2.Create_1(false);
@@ -1057,7 +1057,7 @@ let _c=Lazy((_i) => class $StartupCode_Client {
     this.shortenBtnText=Map((loading) => loading?"Shortening...":"Shorten", rvShortenBtnLoading().View);
     this.refreshBtnText=Map((loading) => loading?"\u23f3 Loading...":"\ud83d\udd04 Refresh", rvRefreshLoading().View);
     this.confirmOverlayClass=Map((show) => show?"confirm-overlay visible":"confirm-overlay", rvShowConfirm().View);
-    this.confirmMessage=Map((url) =>"Are you sure you want to delete this URL?<br/><br/><code>"+url+"</code>", rvConfirmUrl().View);
+    this.confirmUrl=Map((url) => url, rvConfirmUrl().View);
   }
 });
 class Attribute extends TemplateHole {
