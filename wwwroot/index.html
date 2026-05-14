@@ -554,6 +554,40 @@
         }
 
         /* Toast notification */
+        /* Redirect overlay */
+        .redirect-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .redirect-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .redirect-text {
+            color: var(--text-secondary);
+            font-size: 16px;
+            font-weight: 500;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
         .toast-container {
             position: fixed;
             bottom: 24px;
@@ -726,6 +760,21 @@
     <script type="text/javascript" src="Scripts/pgy_k2wmgh_fsharp_omega.head.js"></script>
 </head>
 <body>
+    <!-- Redirect overlay (shown before JS loads when visiting a short URL) -->
+    <div id="redirectOverlay" class="redirect-overlay" style="display: none;">
+        <div class="redirect-spinner"></div>
+        <p class="redirect-text">Redirecting...</p>
+    </div>
+    <script>
+        // Show redirect animation immediately if visiting a short URL
+        (function() {
+            var path = window.location.pathname.replace(/^\//, '');
+            if (path && path !== 'admin') {
+                document.getElementById('redirectOverlay').style.display = 'flex';
+            }
+        })();
+    </script>
+
     <!-- Toast container (outside template to avoid interference) -->
     <div class="toast-container" ws-ignore></div>
 
