@@ -52,17 +52,6 @@ module Client =
                 div?parentNode?RemoveChild(div) |> ignore
         , 3000) |> ignore
 
-    let showPage (page: string) =
-        rvCurrentPage.Value <- page
-        let homeEl = JS.Document.GetElementById("homePage")
-        let adminEl = JS.Document.GetElementById("adminPage")
-        if not (isNull homeEl) && not (isNull adminEl) then
-            homeEl?className <- if page = "home" then "page active" else "page"
-            adminEl?className <- if page = "admin" then "page active" else "page"
-
-    let isValidUrl (url: string) =
-        url.StartsWith("http://") || url.StartsWith("https://") || url.StartsWith("ftp://")
-
     // --- Firestore operations ---
     let refreshUrlList () =
         async {
@@ -76,6 +65,19 @@ module Client =
                 showToast ("Failed to load URLs: " + ex.Message) true
             rvRefreshLoading.Value <- false
         }
+
+    let showPage (page: string) =
+        rvCurrentPage.Value <- page
+        let homeEl = JS.Document.GetElementById("homePage")
+        let adminEl = JS.Document.GetElementById("adminPage")
+        if not (isNull homeEl) && not (isNull adminEl) then
+            homeEl?className <- if page = "home" then "page active" else "page"
+            adminEl?className <- if page = "admin" then "page active" else "page"
+        if page = "admin" then
+            refreshUrlList () |> Async.Start
+
+    let isValidUrl (url: string) =
+        url.StartsWith("http://") || url.StartsWith("https://") || url.StartsWith("ftp://")
 
     let handleShortenUrl () =
         async {

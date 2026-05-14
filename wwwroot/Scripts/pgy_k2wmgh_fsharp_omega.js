@@ -127,6 +127,7 @@ function showPage(page){
     homeEl.className=page=="home"?"page active":"page";
     adminEl.className=page=="admin"?"page active":"page";
   }
+  if(page=="admin")Start(refreshUrlList(), null);
 }
 function handleShortenUrl(){
   return Delay(() => {
