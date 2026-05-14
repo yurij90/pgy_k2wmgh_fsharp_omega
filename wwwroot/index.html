@@ -809,7 +809,7 @@
                     <div class="form-group">
                         <label class="form-label" for="urlInput">Enter your URL</label>
                         <div class="input-group">
-                            <input type="url" id="urlInput" name="url" class="form-input" ws-var="HomeUrl" placeholder="https://example.com/long-url" />
+                            <input type="url" id="urlInput" name="url" class="form-input" ws-var="HomeUrl" placeholder="https://example.com/long-url" onkeypress="if(event.key==='Enter'){event.preventDefault();this.nextElementSibling.click()}" />
                             <button class="btn btn-primary" ws-onclick="ShortenUrl">
                                 <span ws-replace="ShortenBtnContent">Shorten</span>
                             </button>
