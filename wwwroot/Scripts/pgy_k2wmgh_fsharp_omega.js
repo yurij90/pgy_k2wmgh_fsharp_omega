@@ -132,7 +132,7 @@ function showPage(page){
 function handleShortenUrl(){
   return Delay(() => {
     if(!rvShortenBtnLoading().Get()){
-      const url=Trim(rvHomeUrl().Get());
+      const url=TrimEnd(Trim(rvHomeUrl().Get()), ["/"]);
       return IsNullOrWhiteSpace(url)?(rvIsError().Set(true),rvResultLabel().Set("! Please enter a URL"),rvShowResult().Set(true),Zero()):!isValidUrl(url)?(rvIsError().Set(true),rvResultLabel().Set("! URL must start with http:// or https://"),rvShowResult().Set(true),Zero()):(rvShortenBtnLoading().Set(true),Combine(TryWith(Delay(() => Bind(getUrlByOriginal(url), (a) => {
         if(a==null)return Bind(addUrl(url), (a_1) => {
           rvUrlList().Append(New(a_1, url, eval("Date.now()")));

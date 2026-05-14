@@ -86,7 +86,7 @@ module Client =
     let handleShortenUrl () =
         async {
             if not rvShortenBtnLoading.Value then
-                let url = rvHomeUrl.Value.Trim()
+                let url = rvHomeUrl.Value.Trim().TrimEnd('/')
                 if System.String.IsNullOrWhiteSpace url then
                     rvIsError.Value <- true
                     rvResultLabel.Value <- "! Please enter a URL"
@@ -170,7 +170,7 @@ module Client =
     let handleSaveEdit () =
         async {
             let code = rvEditingCode.Value
-            let newUrl = rvEditUrl.Value.Trim()
+            let newUrl = rvEditUrl.Value.Trim().TrimEnd('/')
             if System.String.IsNullOrWhiteSpace newUrl then
                 showToast "URL cannot be empty" true
             elif not (isValidUrl newUrl) then
