@@ -78,7 +78,7 @@ function showToast(msg, isError){
   div.className="toast "+(isError?"toast-error":"toast-success");
   div.textContent=msg;
   globalThis.document.querySelector(".toast-container").appendChild(div);
-  globalThis.setTimeout(() =>!(div.parentNode==null)?void div.parentNode.RemoveChild(div):null, 3000);
+  globalThis.setTimeout(() =>!(div.parentNode==null)?(div.className=String(div.className)+" fade-out",void globalThis.setTimeout(() =>!(div.parentNode==null)?void div.parentNode.RemoveChild(div):null, 300)):null, 2700);
 }
 function refreshUrlList(){
   return Delay(() => {

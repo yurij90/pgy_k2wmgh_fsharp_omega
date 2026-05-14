@@ -49,8 +49,12 @@ module Client =
         container.AppendChild(div) |> ignore
         JS.Window.SetTimeout(fun () ->
             if not (isNull (div?parentNode)) then
-                div?parentNode?RemoveChild(div) |> ignore
-        , 3000) |> ignore
+                div?className <- (string div?className) + " fade-out"
+                JS.Window.SetTimeout(fun () ->
+                    if not (isNull (div?parentNode)) then
+                        div?parentNode?RemoveChild(div) |> ignore
+                , 300) |> ignore
+        , 2700) |> ignore
 
     // --- Firestore operations ---
     let refreshUrlList () =
