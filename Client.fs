@@ -181,6 +181,7 @@ module Client =
                     rvUrlList.UpdateBy (fun r -> if r.ShortCode = code then Some { r with OriginalUrl = newUrl } else None) |> ignore
                     rvEditingCode.Value <- ""
                     showToast "URL updated successfully!" false
+                    refreshUrlList () |> Async.Start
                 with ex ->
                     showToast ("Update failed: " + ex.Message) true
         }
@@ -220,7 +221,7 @@ module Client =
 
     // --- Admin table ---
     let renderAdminTable () =
-        rvUrlList.View.Map (fun items ->
+        View.Map2 (fun items editingCode ->
             let itemsList = Seq.toList items
             if List.isEmpty itemsList then
                 div [attr.``class`` "empty-state"] [
@@ -240,39 +241,74 @@ module Client =
                     ]
                     tbody [] [
                         for item in itemsList ->
-                            let shortUrl = baseUrl + item.ShortCode
-                            tr [] [
-                                td [] [
-                                    span [attr.``class`` "code-badge"] [
-                                        a [attr.href shortUrl; attr.target "_blank"] [text item.ShortCode]
+                            if editingCode = item.ShortCode then
+                                tr [] [
+                                    td [] [
+                                        span [attr.``class`` "code-badge"] [text item.ShortCode]
+                                    ]
+                                    td [attr.``class`` "table-url-cell"] [
+                                        div [attr.``class`` "edit-form"] [
+                                            Doc.InputType.Text [
+                                                attr.``class`` "form-input"
+                                                on.keyDown (fun _ ev ->
+                                                    if unbox<string> ev?key = "Enter" then
+                                                        handleSaveEdit () |> Async.Start
+                                                )
+                                            ] rvEditUrl
+                                        ]
+                                    ]
+                                    td [] [
+                                        text (
+                                            let dateStr = JS.Eval("new Date(" + string item.CreatedAt + ").toLocaleString()")
+                                            string dateStr
+                                        )
+                                    ]
+                                    td [attr.style "text-align: right"] [
+                                        button [
+                                            attr.``class`` "btn btn-primary btn-sm"
+                                            on.click (fun _ _ -> handleSaveEdit () |> Async.Start)
+                                        ] [text "Save"]
+                                        text " "
+                                        button [
+                                            attr.``class`` "btn btn-outline btn-sm"
+                                            on.click (fun _ _ -> handleCancelEdit ())
+                                        ] [text "Cancel"]
                                     ]
                                 ]
-                                td [attr.``class`` "table-url-cell"] [
-                                    a [attr.href item.OriginalUrl; attr.target "_blank"] [text item.OriginalUrl]
+                            else
+                                let shortUrl = baseUrl + item.ShortCode
+                                tr [] [
+                                    td [] [
+                                        span [attr.``class`` "code-badge"] [
+                                            a [attr.href shortUrl; attr.target "_blank"] [text item.ShortCode]
+                                        ]
+                                    ]
+                                    td [attr.``class`` "table-url-cell"] [
+                                        a [attr.href item.OriginalUrl; attr.target "_blank"] [text item.OriginalUrl]
+                                    ]
+                                    td [] [
+                                        text (
+                                            let dateStr = JS.Eval("new Date(" + string item.CreatedAt + ").toLocaleString()")
+                                            string dateStr
+                                        )
+                                    ]
+                                    td [attr.style "text-align: right"] [
+                                        button [
+                                            attr.``class`` "btn btn-outline btn-sm"
+                                            attr.title "Edit"
+                                            on.click (fun _ _ -> handleStartEdit item.ShortCode item.OriginalUrl)
+                                        ] [text "✏️ Edit"]
+                                        text " "
+                                        button [
+                                            attr.``class`` "btn btn-danger btn-sm"
+                                            attr.title "Delete"
+                                            on.click (fun _ _ -> handleDeleteUrl item.ShortCode item.OriginalUrl)
+                                        ] [text "🗑️ Delete"]
+                                    ]
                                 ]
-                                td [] [
-                                    text (
-                                        let dateStr = JS.Eval("new Date(" + string item.CreatedAt + ").toLocaleString()")
-                                        string dateStr
-                                    )
-                                ]
-                                td [attr.style "text-align: right"] [
-                                    button [
-                                        attr.``class`` "btn btn-outline btn-sm"
-                                        attr.title "Edit"
-                                        on.click (fun _ _ -> handleStartEdit item.ShortCode item.OriginalUrl)
-                                    ] [text "✏️ Edit"]
-                                    text " "
-                                    button [
-                                        attr.``class`` "btn btn-danger btn-sm"
-                                        attr.title "Delete"
-                                        on.click (fun _ _ -> handleDeleteUrl item.ShortCode item.OriginalUrl)
-                                    ] [text "🗑️ Delete"]
-                                ]
-                            ]
                     ]
                 ]
-        ) |> Doc.EmbedView
+        ) rvUrlList.View rvEditingCode.View |> Doc.EmbedView
 
     [<SPAEntryPoint>]
     let Main () =

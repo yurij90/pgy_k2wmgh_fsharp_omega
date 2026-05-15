@@ -191,13 +191,16 @@ function handleCopyUrl(){
   else void 0;
 }
 function renderAdminTable(){
-  return Doc.EmbedView(Map((items) => {
-    const itemsList=ofSeq(items);
+  return Doc.EmbedView(Map2((_1, _2) => {
+    const itemsList=ofSeq(_1);
     return itemsList.$==0?Doc.Element("div", [Attr.Create("class", "empty-state")], [Doc.Element("div", [Attr.Create("class", "empty-icon")], [Doc.TextNode("\ud83d\udd17")]), Doc.Element("h3", [], [Doc.TextNode("No URLs yet")]), Doc.Element("p", [], [Doc.TextNode("Create your first shortened URL on the home page.")])]):Doc.Element("table", [], [Doc.Element("thead", [], [Doc.Element("tr", [], [Doc.Element("th", [], [Doc.TextNode("Short Code")]), Doc.Element("th", [], [Doc.TextNode("Original URL")]), Doc.Element("th", [], [Doc.TextNode("Created")]), Doc.Element("th", [Attr.Create("style", "text-align: right")], [Doc.TextNode("Actions")])])]), Doc.Element("tbody", [], ofSeq(delay(() => map((item) => {
-      const shortUrl=baseUrl()+item.ShortCode;
-      return Doc.Element("tr", [], [Doc.Element("td", [], [Doc.Element("span", [Attr.Create("class", "code-badge")], [Doc.Element("a", [Attr.Create("href", shortUrl), Attr.Create("target", "_blank")], [Doc.TextNode(item.ShortCode)])])]), Doc.Element("td", [Attr.Create("class", "table-url-cell")], [Doc.Element("a", [Attr.Create("href", item.OriginalUrl), Attr.Create("target", "_blank")], [Doc.TextNode(item.OriginalUrl)])]), Doc.Element("td", [], [Doc.TextNode(String(eval("new Date("+String(item.CreatedAt)+").toLocaleString()")))]), Doc.Element("td", [Attr.Create("style", "text-align: right")], [Doc.Element("button", [Attr.Create("class", "btn btn-outline btn-sm"), Attr.Create("title", "Edit"), Attr.HandlerImpl("click", () =>() => handleStartEdit(item.ShortCode, item.OriginalUrl))], [Doc.TextNode("\u270f\ufe0f Edit")]), Doc.TextNode(" "), Doc.Element("button", [Attr.Create("class", "btn btn-danger btn-sm"), Attr.Create("title", "Delete"), Attr.HandlerImpl("click", () =>() => handleDeleteUrl(item.ShortCode, item.OriginalUrl))], [Doc.TextNode("\ud83d\uddd1\ufe0f Delete")])])]);
+      if(_2==item.ShortCode)return Doc.Element("tr", [], [Doc.Element("td", [], [Doc.Element("span", [Attr.Create("class", "code-badge")], [Doc.TextNode(item.ShortCode)])]), Doc.Element("td", [Attr.Create("class", "table-url-cell")], [Doc.Element("div", [Attr.Create("class", "edit-form")], [Doc.Input([Attr.Create("class", "form-input"), Attr.HandlerImpl("keydown", () =>(ev) => ev.key=="Enter"?Start(handleSaveEdit(), null):null)], rvEditUrl())])]), Doc.Element("td", [], [Doc.TextNode(String(eval("new Date("+String(item.CreatedAt)+").toLocaleString()")))]), Doc.Element("td", [Attr.Create("style", "text-align: right")], [Doc.Element("button", [Attr.Create("class", "btn btn-primary btn-sm"), Attr.HandlerImpl("click", () =>() => Start(handleSaveEdit(), null))], [Doc.TextNode("Save")]), Doc.TextNode(" "), Doc.Element("button", [Attr.Create("class", "btn btn-outline btn-sm"), Attr.HandlerImpl("click", () =>() => handleCancelEdit())], [Doc.TextNode("Cancel")])])]);
+      else {
+        const shortUrl=baseUrl()+item.ShortCode;
+        return Doc.Element("tr", [], [Doc.Element("td", [], [Doc.Element("span", [Attr.Create("class", "code-badge")], [Doc.Element("a", [Attr.Create("href", shortUrl), Attr.Create("target", "_blank")], [Doc.TextNode(item.ShortCode)])])]), Doc.Element("td", [Attr.Create("class", "table-url-cell")], [Doc.Element("a", [Attr.Create("href", item.OriginalUrl), Attr.Create("target", "_blank")], [Doc.TextNode(item.OriginalUrl)])]), Doc.Element("td", [], [Doc.TextNode(String(eval("new Date("+String(item.CreatedAt)+").toLocaleString()")))]), Doc.Element("td", [Attr.Create("style", "text-align: right")], [Doc.Element("button", [Attr.Create("class", "btn btn-outline btn-sm"), Attr.Create("title", "Edit"), Attr.HandlerImpl("click", () =>() => handleStartEdit(item.ShortCode, item.OriginalUrl))], [Doc.TextNode("\u270f\ufe0f Edit")]), Doc.TextNode(" "), Doc.Element("button", [Attr.Create("class", "btn btn-danger btn-sm"), Attr.Create("title", "Delete"), Attr.HandlerImpl("click", () =>() => handleDeleteUrl(item.ShortCode, item.OriginalUrl))], [Doc.TextNode("\ud83d\uddd1\ufe0f Delete")])])]);
+      }
     }, itemsList))))]);
-  }, rvUrlList().v));
+  }, rvUrlList().v, rvEditingCode().View));
 }
 function confirmOverlayClass(){
   return _c.confirmOverlayClass;
@@ -249,6 +252,31 @@ function baseUrl(){
 function rvCopyBtnText(){
   return _c.rvCopyBtnText;
 }
+function rvEditingCode(){
+  return _c.rvEditingCode;
+}
+function handleSaveEdit(){
+  return Delay(() => {
+    const code=rvEditingCode().Get();
+    const newUrl=TrimEnd(Trim(rvEditUrl().Get()), ["/"]);
+    return IsNullOrWhiteSpace(newUrl)?(showToast("URL cannot be empty", true),Zero()):!isValidUrl(newUrl)?(showToast("URL must start with http:// or https://", true),Zero()):TryWith(Delay(() => Bind(updateUrl(code, newUrl), () => {
+      const a=(r) => r.ShortCode==code?Some(New(r.ShortCode, newUrl, r.CreatedAt)):null;
+      rvEditingCode().Set("");
+      showToast("URL updated successfully!", false);
+      Start(refreshUrlList(), null);
+      return Zero();
+    })), (a) => {
+      showToast("Update failed: "+a.message, true);
+      return Zero();
+    });
+  });
+}
+function rvEditUrl(){
+  return _c.rvEditUrl;
+}
+function handleCancelEdit(){
+  rvEditingCode().Set("");
+}
 function handleStartEdit(code, currentUrl){
   rvEditingCode().Set(code);
   rvEditUrl().Set(currentUrl);
@@ -263,12 +291,6 @@ function rvConfirmCode(){
 }
 function rvConfirmUrl(){
   return _c.rvConfirmUrl;
-}
-function rvEditingCode(){
-  return _c.rvEditingCode;
-}
-function rvEditUrl(){
-  return _c.rvEditUrl;
 }
 function FailWith(msg){
   throw new Error(msg);
@@ -378,6 +400,19 @@ function generateShortCode(){
 }
 function now(){
   return eval("Date.now()");
+}
+function updateUrl(shortCode, newUrl){
+  return FromContinuations((ok, err) => {
+    const docRef=getDb().collection("urls").doc(shortCode);
+    const data={originalUrl:newUrl};
+    const promise=docRef.update(data);
+    promise.then(() => {
+      ok();
+    });
+    promise["catch"]((e) => {
+      err(new Error(String(e)));
+    });
+  });
 }
 function NewFromSeq(fields){
   let _1;
@@ -892,11 +927,11 @@ function Split(s, pat, opts){
 function RegexEscape(s){
   return s.replace(new RegExp("[-\\/\\\\^$*+?.()|[\\]{}]", "g"), "\\$&");
 }
-function SplitWith(str, pat){
-  return str.split(pat);
-}
 function forall(f, s){
   return forall_1(f, protect(s));
+}
+function SplitWith(str, pat){
+  return str.split(pat);
 }
 function protect(s){
   return s==null?"":s;
@@ -932,6 +967,19 @@ class ListModel extends Object_1 {
     if(m!=null&&m.$==1)this.u0076ar.Set(this.storage.SSetAt(m.$0, item, v));
     else this.u0076ar.Set(this.storage.SAppend(item, v));
     this.ObsoleteKey(t);
+  }
+  UpdateBy(fn, key){
+    const v=this.u0076ar.Get();
+    const m=tryFindIndex((it) => Equals(this.key(it), key), v);
+    if(m!=null&&m.$==1){
+      const index=m.$0;
+      const m_1=fn(get(v, index));
+      if(m_1!=null&&m_1.$==1){
+        this.u0076ar.Set(this.storage.SSetAt(index, m_1.$0, v));
+        this.ObsoleteKey(key);
+      }
+    }
+    else void 0;
   }
   ObsoleteKey(key){
     let o;
@@ -1126,6 +1174,16 @@ function NewGuid(){
 function Dynamic(name, view){
   return Dynamic_1(view, (el) =>(v) => el.setAttribute(name, v));
 }
+function Value(var_1){
+  return ValueWith(StringApply(), var_1);
+}
+function ValueWith(bind, var_1){
+  const p=bind(var_1);
+  return AppendTree(Attr.A3(p[0]), DynamicCustom(p[1], p[2]));
+}
+function DynamicCustom(set_1, view){
+  return Dynamic_1(view, set_1);
+}
 function Handler(name, callback){
   return Attr.A3((el) => {
     el.addEventListener(name, (d) =>(callback(el))(d), false);
@@ -1133,9 +1191,6 @@ function Handler(name, callback){
 }
 function OnAfterRender(callback){
   return Attr.A4(callback);
-}
-function Value(var_1){
-  return ValueWith(StringApply(), var_1);
 }
 function FloatValueUnchecked(var_1){
   return ValueWith(FloatApplyUnchecked(), var_1);
@@ -1151,13 +1206,6 @@ function FileValue(var_1){
 }
 function StringListValue(var_1){
   return ValueWith(StringListApply(), var_1);
-}
-function ValueWith(bind, var_1){
-  const p=bind(var_1);
-  return AppendTree(Attr.A3(p[0]), DynamicCustom(p[1], p[2]));
-}
-function DynamicCustom(set_1, view){
-  return Dynamic_1(view, set_1);
 }
 class EventQ extends TemplateHole {
   name;
@@ -1176,7 +1224,57 @@ class EventQ extends TemplateHole {
     this.fillWith=fillWith;
   }
 }
-class View { }
+function Map2(fn, a, a_1){
+  return CreateLazy(() => Map2_1(fn, a(), a_1()));
+}
+function CreateLazy(observe){
+  const lv={c:null, o:observe};
+  return() => {
+    let c;
+    c=lv.c;
+    if(c===null){
+      c=lv.o();
+      lv.c=c;
+      const _1=c.s;
+      if(_1!=null&&_1.$==0)lv.o=null;
+      else WhenObsoleteRun(c, () => {
+        lv.c=null;
+      });
+      return c;
+    }
+    else return c;
+  };
+}
+function Map(fn, a){
+  return CreateLazy(() => Map_1(fn, a()));
+}
+function Const(x){
+  const o={s:Forever(x)};
+  return() => o;
+}
+function Bind_1(fn, view){
+  return Join(Map(fn, view));
+}
+function Join(a){
+  return CreateLazy(() => Join_1(a()));
+}
+function Sink(act, a){
+  function loop(){
+    WhenRun(a(), act, () => {
+      scheduler().Fork(loop);
+    });
+  }
+  scheduler().Fork(loop);
+}
+function Map3(fn, a, a_1, a_2){
+  return CreateLazy(() => Map3_1(fn, a(), a_1(), a_2()));
+}
+function Sequence(views){
+  return CreateLazy(() => Sequence_1(map((a) => a(), views)));
+}
+function Map2Unit(a, a_1){
+  return CreateLazy(() => Map2Unit_1(a(), a_1()));
+}
 function delay(f){
   return{GetEnumerator:() => Get(f())};
 }
@@ -1270,25 +1368,6 @@ function distinctBy(f, s){
 function collect(f, s){
   return concat_1(map(f, s));
 }
-function max(s){
-  const e=Get(s);
-  try {
-    let m;
-    if(!e.MoveNext())seqEmpty();
-    else null;
-    m=e.Current;
-    while(e.MoveNext())
-      {
-        const x=e.Current;
-        if(Compare(x, m)===1)m=x;
-      }
-    return m;
-  }
-  finally {
-    const _1=e;
-    if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
-  }
-}
 function concat_1(ss){
   return{GetEnumerator:() => {
     const outerE=Get(ss);
@@ -1328,9 +1407,6 @@ function concat_1(ss){
 function init(n, f){
   return take(n, initInfinite(f));
 }
-function seqEmpty(){
-  return FailWith("The input sequence was empty.");
-}
 function take(n, s){
   n<0?nonNegative():void 0;
   return{GetEnumerator:() => {
@@ -1358,6 +1434,25 @@ function initInfinite(f){
 function forall_1(p, s){
   return!exists((x) =>!p(x), s);
 }
+function max(s){
+  const e=Get(s);
+  try {
+    let m;
+    if(!e.MoveNext())seqEmpty();
+    else null;
+    m=e.Current;
+    while(e.MoveNext())
+      {
+        const x=e.Current;
+        if(Compare(x, m)===1)m=x;
+      }
+    return m;
+  }
+  finally {
+    const _1=e;
+    if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
+  }
+}
 function exists(p, s){
   const e=Get(s);
   try {
@@ -1371,6 +1466,9 @@ function exists(p, s){
     const _1=e;
     if(typeof _1=="object"&&isIDisposable(_1))e.Dispose();
   }
+}
+function seqEmpty(){
+  return FailWith("The input sequence was empty.");
 }
 function rev(l){
   let res, r;
@@ -2044,6 +2142,9 @@ class Doc extends Object_1 {
   static TextNode(v){
     return Doc.Mk(TextNodeDoc(globalThis.document.createTextNode(v)), Const());
   }
+  static Input(attr_1, var_1){
+    return Doc.InputInternal("input", () => append(attr_1, [Value(var_1)]));
+  }
   static EmbedView(view){
     const node=CreateEmbedNode();
     return Doc.Mk(EmbedDoc(node), Map(() => { }, Bind_1((doc) => {
@@ -2062,6 +2163,10 @@ class Doc extends Object_1 {
   }
   static Mk(node, updates){
     return new Doc(node, updates);
+  }
+  static InputInternal(elemTy, attr_1){
+    const el=globalThis.document.createElement(elemTy);
+    return Elt_1.New(el, Attr.Concat(attr_1(el)), Doc.Empty);
   }
   static get Empty(){
     return Doc.Mk(null, Const());
@@ -2373,6 +2478,7 @@ class Dictionary extends Object_1 {
     }
   }
 }
+class View { }
 let _c_2=Lazy((_i) => class Var_1 extends Object_1 {
   static {
     _c_2=_i(this);
@@ -2438,7 +2544,7 @@ function AppendTree(a, b){
   }
 }
 function EmptyAttr(){
-  return _c_9.EmptyAttr;
+  return _c_5.EmptyAttr;
 }
 function Flags(a){
   return a!==null&&a.hasOwnProperty("flags")?a.flags:0;
@@ -2510,19 +2616,19 @@ function ChildrenArray(element){
   return a;
 }
 function rhtml(){
-  return _c_7.rhtml;
+  return _c_8.rhtml;
 }
 function wrapMap(){
-  return _c_7.wrapMap;
+  return _c_8.wrapMap;
 }
 function defaultWrap(){
-  return _c_7.defaultWrap;
+  return _c_8.defaultWrap;
 }
 function rxhtmlTag(){
-  return _c_7.rxhtmlTag;
+  return _c_8.rxhtmlTag;
 }
 function rtagName(){
-  return _c_7.rtagName;
+  return _c_8.rtagName;
 }
 function IterSelector(el, selector, f){
   const l=el.querySelectorAll(selector);
@@ -2545,56 +2651,253 @@ function InsertAt(parent, pos, node){
 function RemoveNode(parent, el){
   if(el.parentNode===parent)parent.removeChild(el);
 }
-function Map(fn, a){
-  return CreateLazy(() => Map_1(fn, a()));
-}
-function CreateLazy(observe){
-  const lv={c:null, o:observe};
-  return() => {
-    let c;
-    c=lv.c;
-    if(c===null){
-      c=lv.o();
-      lv.c=c;
-      const _1=c.s;
-      if(_1!=null&&_1.$==0)lv.o=null;
-      else WhenObsoleteRun(c, () => {
-        lv.c=null;
-      });
-      return c;
-    }
-    else return c;
-  };
-}
-function Const(x){
-  const o={s:Forever(x)};
-  return() => o;
-}
-function Bind_1(fn, view){
-  return Join(Map(fn, view));
-}
-function Join(a){
-  return CreateLazy(() => Join_1(a()));
-}
-function Sink(act, a){
-  function loop(){
-    WhenRun(a(), act, () => {
-      scheduler().Fork(loop);
-    });
+function Map2_1(fn, sn1, sn2){
+  const _1=sn1.s;
+  const _2=sn2.s;
+  if(_1!=null&&_1.$==0)return _2!=null&&_2.$==0?{s:Forever(fn(_1.$0, _2.$0))}:Map2Opt1(fn, _1.$0, sn2);
+  else if(_2!=null&&_2.$==0)return Map2Opt2(fn, _2.$0, sn1);
+  else {
+    const res={s:Waiting([], [])};
+    const cont=() => {
+      const m=res.s;
+      if(!(m!=null&&m.$==0||m!=null&&m.$==2)){
+        const _3=ValueAndForever(sn1);
+        const _4=ValueAndForever(sn2);
+        if(_3!=null&&_3.$==1)if(_4!=null&&_4.$==1)if(_3.$0[1]&&_4.$0[1])MarkForever(res, fn(_3.$0[0], _4.$0[0]));
+        else MarkReady(res, fn(_3.$0[0], _4.$0[0]));
+      }
+    };
+    When(sn1, cont, res);
+    When(sn2, cont, res);
+    return res;
   }
-  scheduler().Fork(loop);
 }
-function Map3(fn, a, a_1, a_2){
-  return CreateLazy(() => Map3_1(fn, a(), a_1(), a_2()));
+function WhenObsoleteRun(snap, obs){
+  const m=snap.s;
+  if(m==null)obs();
+  else m!=null&&m.$==2?(m.$0,m.$1.push(obs)):m!=null&&m.$==3?(m.$0,m.$1.push(obs)):m.$0;
 }
-function Sequence(views){
-  return CreateLazy(() => Sequence_1(map((a) => a(), views)));
+function Map2Opt1(fn, x, sn2){
+  return Map_1((y) => fn(x, y), sn2);
 }
-function Map2(fn, a, a_1){
-  return CreateLazy(() => Map2_1(fn, a(), a_1()));
+function Map2Opt2(fn, y, sn1){
+  return Map_1((x) => fn(x, y), sn1);
 }
-function Map2Unit(a, a_1){
-  return CreateLazy(() => Map2Unit_1(a(), a_1()));
+function ValueAndForever(snap){
+  const m=snap.s;
+  return m!=null&&m.$==0?Some([m.$0, true]):m!=null&&m.$==2?Some([m.$0, false]):null;
+}
+function MarkForever(sn, v){
+  const m=sn.s;
+  if(m!=null&&m.$==3){
+    const q=m.$0;
+    sn.s=Forever(v);
+    for(let i=0, _1=length(q)-1;i<=_1;i++)(get(q, i))(v);
+  }
+  else void 0;
+}
+function MarkReady(sn, v){
+  const m=sn.s;
+  if(m!=null&&m.$==3){
+    const q2=m.$1;
+    const q1=m.$0;
+    sn.s=Ready(v, q2);
+    for(let i=0, _1=length(q1)-1;i<=_1;i++)(get(q1, i))(v);
+  }
+  else void 0;
+}
+function When(snap, avail, obs){
+  const m=snap.s;
+  if(m==null)Obsolete(obs);
+  else if(m!=null&&m.$==2){
+    const v=m.$0;
+    EnqueueSafe(m.$1, obs);
+    avail(v);
+  }
+  else if(m!=null&&m.$==3){
+    const q2=m.$1;
+    m.$0.push(avail);
+    EnqueueSafe(q2, obs);
+  }
+  else avail(m.$0);
+}
+function Map_1(fn, sn){
+  const m=sn.s;
+  if(m!=null&&m.$==0)return{s:Forever(fn(m.$0))};
+  else {
+    const res={s:Waiting([], [])};
+    When(sn, (a) => {
+      MarkDone(res, sn, fn(a));
+    }, res);
+    return res;
+  }
+}
+function EnqueueSafe(q, x){
+  q.push(x);
+  if(q.length%20===0){
+    const qcopy=q.slice(0);
+    Clear(q);
+    for(let i=0, _1=length(qcopy)-1;i<=_1;i++){
+      const o=get(qcopy, i);
+      if(typeof o=="object")(((sn) => {
+        if(sn.s)q.push(sn);
+      })(o));
+      else(((f) => {
+        q.push(f);
+      })(o));
+    }
+  }
+  else void 0;
+}
+function MarkDone(res, sn, v){
+  const _1=sn.s;
+  if(_1!=null&&_1.$==0)MarkForever(res, v);
+  else MarkReady(res, v);
+}
+function Join_1(snap){
+  const res={s:Waiting([], [])};
+  When(snap, (x) => {
+    const y=x();
+    When(y, (v) => {
+      let _1;
+      const _2=y.s;
+      if(_2!=null&&_2.$==0){
+        const _3=snap.s;
+        _1=_3!=null&&_3.$==0;
+      }
+      else _1=false;
+      if(_1)MarkForever(res, v);
+      else MarkReady(res, v);
+    }, res);
+  }, res);
+  return res;
+}
+function WhenRun(snap, avail, obs){
+  const m=snap.s;
+  if(m==null)obs();
+  else if(m!=null&&m.$==2){
+    const v=m.$0;
+    m.$1.push(obs);
+    avail(v);
+  }
+  else if(m!=null&&m.$==3){
+    const q2=m.$1;
+    m.$0.push(avail);
+    q2.push(obs);
+  }
+  else avail(m.$0);
+}
+function Map3_1(fn, sn1, sn2, sn3){
+  const _1=sn1.s;
+  const _2=sn2.s;
+  const _3=sn3.s;
+  if(_1!=null&&_1.$==0)return _2!=null&&_2.$==0?_3!=null&&_3.$==0?{s:Forever(fn(_1.$0, _2.$0, _3.$0))}:Map3Opt1(fn, _1.$0, _2.$0, sn3):_3!=null&&_3.$==0?Map3Opt2(fn, _1.$0, _3.$0, sn2):Map3Opt3(fn, _1.$0, sn2, sn3);
+  else if(_2!=null&&_2.$==0)return _3!=null&&_3.$==0?Map3Opt4(fn, _2.$0, _3.$0, sn1):Map3Opt5(fn, _2.$0, sn1, sn3);
+  else if(_3!=null&&_3.$==0)return Map3Opt6(fn, _3.$0, sn1, sn2);
+  else {
+    const res={s:Waiting([], [])};
+    const cont=() => {
+      const m=res.s;
+      if(!(m!=null&&m.$==0||m!=null&&m.$==2)){
+        const _4=ValueAndForever(sn1);
+        const _5=ValueAndForever(sn2);
+        const _6=ValueAndForever(sn3);
+        if(_4!=null&&_4.$==1)if(_5!=null&&_5.$==1)if(_6!=null&&_6.$==1)if(_4.$0[1]&&_5.$0[1]&&_6.$0[1])MarkForever(res, fn(_4.$0[0], _5.$0[0], _6.$0[0]));
+        else MarkReady(res, fn(_4.$0[0], _5.$0[0], _6.$0[0]));
+      }
+    };
+    When(sn1, cont, res);
+    When(sn2, cont, res);
+    When(sn3, cont, res);
+    return res;
+  }
+}
+function Sequence_1(snaps){
+  const snaps_1=ofSeq_1(snaps);
+  if(snaps_1.length==0)return{s:Forever([])};
+  else {
+    const res={s:Waiting([], [])};
+    const w=[length(snaps_1)-1];
+    const cont=() => {
+      if(w[0]===0){
+        const vs=map_1((s) => {
+          const m=s.s;
+          return m!=null&&m.$==0?m.$0:m!=null&&m.$==2?m.$0:FailWith("value not found by View.Sequence");
+        }, snaps_1);
+        if(forall_2((s) => {
+          const _1=s.s;
+          return _1!=null&&_1.$==0;
+        }, snaps_1))MarkForever(res, vs);
+        else MarkReady(res, vs);
+      }
+      else w[0]=w[0]-1;
+    };
+    iter_1((s) => {
+      When(s, cont, res);
+    }, snaps_1);
+    return res;
+  }
+}
+function Map2Unit_1(sn1, sn2){
+  const _1=sn1.s;
+  const _2=sn2.s;
+  if(_1!=null&&_1.$==0)return _2!=null&&_2.$==0?{s:Forever(null)}:sn2;
+  else if(_2!=null&&_2.$==0)return sn1;
+  else {
+    const res={s:Waiting([], [])};
+    const cont=() => {
+      const m=res.s;
+      if(!(m!=null&&m.$==0||m!=null&&m.$==2)){
+        const _3=ValueAndForever(sn1);
+        const _4=ValueAndForever(sn2);
+        if(_3!=null&&_3.$==1)if(_4!=null&&_4.$==1)if(_3.$0[1]&&_4.$0[1])MarkForever(res, null);
+        else MarkReady(res, null);
+      }
+    };
+    When(sn1, cont, res);
+    When(sn2, cont, res);
+    return res;
+  }
+}
+function Copy(sn){
+  const m=sn.s;
+  if(m==null)return sn;
+  else if(m!=null&&m.$==2){
+    const res={s:Ready(m.$0, [])};
+    WhenObsolete(sn, res);
+    return res;
+  }
+  else if(m!=null&&m.$==3){
+    const res_1={s:Waiting([], [])};
+    When(sn, (v) => {
+      MarkDone(res_1, sn, v);
+    }, res_1);
+    return res_1;
+  }
+  else return sn;
+}
+function Map3Opt1(fn, x, y, sn3){
+  return Map_1((z) => fn(x, y, z), sn3);
+}
+function Map3Opt2(fn, x, z, sn2){
+  return Map_1((y) => fn(x, y, z), sn2);
+}
+function Map3Opt3(fn, x, sn2, sn3){
+  return Map2_1((_1, _2) => fn(x, _1, _2), sn2, sn3);
+}
+function Map3Opt4(fn, y, z, sn1){
+  return Map_1((x) => fn(x, y, z), sn1);
+}
+function Map3Opt5(fn, y, sn1, sn3){
+  return Map2_1((_1, _2) => fn(_1, y, _2), sn1, sn3);
+}
+function Map3Opt6(fn, z, sn1, sn2){
+  return Map2_1((_1, _2) => fn(_1, _2, z), sn1, sn2);
+}
+function WhenObsolete(snap, obs){
+  const m=snap.s;
+  if(m==null)Obsolete(obs);
+  else m!=null&&m.$==2?(m.$0,EnqueueSafe(m.$1, obs)):m!=null&&m.$==3?(m.$0,EnqueueSafe(m.$1, obs)):m.$0;
 }
 class Attr {
   static Create(name, value){
@@ -3001,254 +3304,6 @@ function Obsolete(sn){
       else o();
     }
   }
-}
-function Map_1(fn, sn){
-  const m=sn.s;
-  if(m!=null&&m.$==0)return{s:Forever(fn(m.$0))};
-  else {
-    const res={s:Waiting([], [])};
-    When(sn, (a) => {
-      MarkDone(res, sn, fn(a));
-    }, res);
-    return res;
-  }
-}
-function WhenObsoleteRun(snap, obs){
-  const m=snap.s;
-  if(m==null)obs();
-  else m!=null&&m.$==2?(m.$0,m.$1.push(obs)):m!=null&&m.$==3?(m.$0,m.$1.push(obs)):m.$0;
-}
-function When(snap, avail, obs){
-  const m=snap.s;
-  if(m==null)Obsolete(obs);
-  else if(m!=null&&m.$==2){
-    const v=m.$0;
-    EnqueueSafe(m.$1, obs);
-    avail(v);
-  }
-  else if(m!=null&&m.$==3){
-    const q2=m.$1;
-    m.$0.push(avail);
-    EnqueueSafe(q2, obs);
-  }
-  else avail(m.$0);
-}
-function MarkDone(res, sn, v){
-  const _1=sn.s;
-  if(_1!=null&&_1.$==0)MarkForever(res, v);
-  else MarkReady(res, v);
-}
-function EnqueueSafe(q, x){
-  q.push(x);
-  if(q.length%20===0){
-    const qcopy=q.slice(0);
-    Clear(q);
-    for(let i=0, _1=length(qcopy)-1;i<=_1;i++){
-      const o=get(qcopy, i);
-      if(typeof o=="object")(((sn) => {
-        if(sn.s)q.push(sn);
-      })(o));
-      else(((f) => {
-        q.push(f);
-      })(o));
-    }
-  }
-  else void 0;
-}
-function MarkForever(sn, v){
-  const m=sn.s;
-  if(m!=null&&m.$==3){
-    const q=m.$0;
-    sn.s=Forever(v);
-    for(let i=0, _1=length(q)-1;i<=_1;i++)(get(q, i))(v);
-  }
-  else void 0;
-}
-function MarkReady(sn, v){
-  const m=sn.s;
-  if(m!=null&&m.$==3){
-    const q2=m.$1;
-    const q1=m.$0;
-    sn.s=Ready(v, q2);
-    for(let i=0, _1=length(q1)-1;i<=_1;i++)(get(q1, i))(v);
-  }
-  else void 0;
-}
-function Join_1(snap){
-  const res={s:Waiting([], [])};
-  When(snap, (x) => {
-    const y=x();
-    When(y, (v) => {
-      let _1;
-      const _2=y.s;
-      if(_2!=null&&_2.$==0){
-        const _3=snap.s;
-        _1=_3!=null&&_3.$==0;
-      }
-      else _1=false;
-      if(_1)MarkForever(res, v);
-      else MarkReady(res, v);
-    }, res);
-  }, res);
-  return res;
-}
-function WhenRun(snap, avail, obs){
-  const m=snap.s;
-  if(m==null)obs();
-  else if(m!=null&&m.$==2){
-    const v=m.$0;
-    m.$1.push(obs);
-    avail(v);
-  }
-  else if(m!=null&&m.$==3){
-    const q2=m.$1;
-    m.$0.push(avail);
-    q2.push(obs);
-  }
-  else avail(m.$0);
-}
-function Map3_1(fn, sn1, sn2, sn3){
-  const _1=sn1.s;
-  const _2=sn2.s;
-  const _3=sn3.s;
-  if(_1!=null&&_1.$==0)return _2!=null&&_2.$==0?_3!=null&&_3.$==0?{s:Forever(fn(_1.$0, _2.$0, _3.$0))}:Map3Opt1(fn, _1.$0, _2.$0, sn3):_3!=null&&_3.$==0?Map3Opt2(fn, _1.$0, _3.$0, sn2):Map3Opt3(fn, _1.$0, sn2, sn3);
-  else if(_2!=null&&_2.$==0)return _3!=null&&_3.$==0?Map3Opt4(fn, _2.$0, _3.$0, sn1):Map3Opt5(fn, _2.$0, sn1, sn3);
-  else if(_3!=null&&_3.$==0)return Map3Opt6(fn, _3.$0, sn1, sn2);
-  else {
-    const res={s:Waiting([], [])};
-    const cont=() => {
-      const m=res.s;
-      if(!(m!=null&&m.$==0||m!=null&&m.$==2)){
-        const _4=ValueAndForever(sn1);
-        const _5=ValueAndForever(sn2);
-        const _6=ValueAndForever(sn3);
-        if(_4!=null&&_4.$==1)if(_5!=null&&_5.$==1)if(_6!=null&&_6.$==1)if(_4.$0[1]&&_5.$0[1]&&_6.$0[1])MarkForever(res, fn(_4.$0[0], _5.$0[0], _6.$0[0]));
-        else MarkReady(res, fn(_4.$0[0], _5.$0[0], _6.$0[0]));
-      }
-    };
-    When(sn1, cont, res);
-    When(sn2, cont, res);
-    When(sn3, cont, res);
-    return res;
-  }
-}
-function Sequence_1(snaps){
-  const snaps_1=ofSeq_1(snaps);
-  if(snaps_1.length==0)return{s:Forever([])};
-  else {
-    const res={s:Waiting([], [])};
-    const w=[length(snaps_1)-1];
-    const cont=() => {
-      if(w[0]===0){
-        const vs=map_1((s) => {
-          const m=s.s;
-          return m!=null&&m.$==0?m.$0:m!=null&&m.$==2?m.$0:FailWith("value not found by View.Sequence");
-        }, snaps_1);
-        if(forall_2((s) => {
-          const _1=s.s;
-          return _1!=null&&_1.$==0;
-        }, snaps_1))MarkForever(res, vs);
-        else MarkReady(res, vs);
-      }
-      else w[0]=w[0]-1;
-    };
-    iter_1((s) => {
-      When(s, cont, res);
-    }, snaps_1);
-    return res;
-  }
-}
-function Map2_1(fn, sn1, sn2){
-  const _1=sn1.s;
-  const _2=sn2.s;
-  if(_1!=null&&_1.$==0)return _2!=null&&_2.$==0?{s:Forever(fn(_1.$0, _2.$0))}:Map2Opt1(fn, _1.$0, sn2);
-  else if(_2!=null&&_2.$==0)return Map2Opt2(fn, _2.$0, sn1);
-  else {
-    const res={s:Waiting([], [])};
-    const cont=() => {
-      const m=res.s;
-      if(!(m!=null&&m.$==0||m!=null&&m.$==2)){
-        const _3=ValueAndForever(sn1);
-        const _4=ValueAndForever(sn2);
-        if(_3!=null&&_3.$==1)if(_4!=null&&_4.$==1)if(_3.$0[1]&&_4.$0[1])MarkForever(res, fn(_3.$0[0], _4.$0[0]));
-        else MarkReady(res, fn(_3.$0[0], _4.$0[0]));
-      }
-    };
-    When(sn1, cont, res);
-    When(sn2, cont, res);
-    return res;
-  }
-}
-function Map2Unit_1(sn1, sn2){
-  const _1=sn1.s;
-  const _2=sn2.s;
-  if(_1!=null&&_1.$==0)return _2!=null&&_2.$==0?{s:Forever(null)}:sn2;
-  else if(_2!=null&&_2.$==0)return sn1;
-  else {
-    const res={s:Waiting([], [])};
-    const cont=() => {
-      const m=res.s;
-      if(!(m!=null&&m.$==0||m!=null&&m.$==2)){
-        const _3=ValueAndForever(sn1);
-        const _4=ValueAndForever(sn2);
-        if(_3!=null&&_3.$==1)if(_4!=null&&_4.$==1)if(_3.$0[1]&&_4.$0[1])MarkForever(res, null);
-        else MarkReady(res, null);
-      }
-    };
-    When(sn1, cont, res);
-    When(sn2, cont, res);
-    return res;
-  }
-}
-function Copy(sn){
-  const m=sn.s;
-  if(m==null)return sn;
-  else if(m!=null&&m.$==2){
-    const res={s:Ready(m.$0, [])};
-    WhenObsolete(sn, res);
-    return res;
-  }
-  else if(m!=null&&m.$==3){
-    const res_1={s:Waiting([], [])};
-    When(sn, (v) => {
-      MarkDone(res_1, sn, v);
-    }, res_1);
-    return res_1;
-  }
-  else return sn;
-}
-function Map3Opt1(fn, x, y, sn3){
-  return Map_1((z) => fn(x, y, z), sn3);
-}
-function Map3Opt2(fn, x, z, sn2){
-  return Map_1((y) => fn(x, y, z), sn2);
-}
-function Map3Opt3(fn, x, sn2, sn3){
-  return Map2_1((_1, _2) => fn(x, _1, _2), sn2, sn3);
-}
-function Map3Opt4(fn, y, z, sn1){
-  return Map_1((x) => fn(x, y, z), sn1);
-}
-function Map3Opt5(fn, y, sn1, sn3){
-  return Map2_1((_1, _2) => fn(_1, y, _2), sn1, sn3);
-}
-function Map3Opt6(fn, z, sn1, sn2){
-  return Map2_1((_1, _2) => fn(_1, _2, z), sn1, sn2);
-}
-function ValueAndForever(snap){
-  const m=snap.s;
-  return m!=null&&m.$==0?Some([m.$0, true]):m!=null&&m.$==2?Some([m.$0, false]):null;
-}
-function Map2Opt1(fn, x, sn2){
-  return Map_1((y) => fn(x, y), sn2);
-}
-function Map2Opt2(fn, y, sn1){
-  return Map_1((x) => fn(x, y), sn1);
-}
-function WhenObsolete(snap, obs){
-  const m=snap.s;
-  if(m==null)Obsolete(obs);
-  else m!=null&&m.$==2?(m.$0,EnqueueSafe(m.$1, obs)):m!=null&&m.$==3?(m.$0,EnqueueSafe(m.$1, obs)):m.$0;
 }
 function TextNodeDoc(Item){
   return{$:5, $0:Item};
@@ -3673,13 +3728,120 @@ function Int(){
   return counter();
 }
 function set_counter(_1){
-  _c_6.counter=_1;
+  _c_7.counter=_1;
 }
 function counter(){
-  return _c_6.counter;
+  return _c_7.counter;
 }
 function InMemory(init_2){
   return new ArrayStorage(init_2);
+}
+function StringApply(){
+  return _c_5.StringApply;
+}
+function ApplyValue(get_1, set_1, var_1){
+  let expectedValue;
+  expectedValue=null;
+  return[(el) => {
+    const onChange=() => {
+      var_1.UpdateMaybe((v) => {
+        let _1;
+        expectedValue=get_1(el);
+        return expectedValue!=null&&expectedValue.$==1&&(!Equals(expectedValue.$0, v)&&(_1=[expectedValue, expectedValue.$0],true))?_1[0]:null;
+      });
+    };
+    el.addEventListener("change", onChange);
+    el.addEventListener("input", onChange);
+    el.addEventListener("keypress", onChange);
+  }, (x) => {
+    const _1=set_1(x);
+    return(_2) => _2==null?null:_1(_2.$0);
+  }, Map((v) => {
+    let _1;
+    return expectedValue!=null&&expectedValue.$==1&&(Equals(expectedValue.$0, v)&&(_1=expectedValue.$0,true))?null:Some(v);
+  }, var_1.View)];
+}
+function StringSet(){
+  return _c_5.StringSet;
+}
+function StringGet(){
+  return _c_5.StringGet;
+}
+function StringListSet(){
+  return _c_5.StringListSet;
+}
+function StringListGet(){
+  return _c_5.StringListGet;
+}
+function DateTimeSetUnchecked(){
+  return _c_5.DateTimeSetUnchecked;
+}
+function DateTimeGetUnchecked(){
+  return _c_5.DateTimeGetUnchecked;
+}
+function FileApplyValue(get_1, set_1, var_1){
+  let expectedValue;
+  expectedValue=null;
+  return[(el) => {
+    el.addEventListener("change", () => {
+      var_1.UpdateMaybe((v) => {
+        let _1;
+        expectedValue=get_1(el);
+        return expectedValue!=null&&expectedValue.$==1&&(expectedValue.$0!==v&&(_1=[expectedValue, expectedValue.$0],true))?_1[0]:null;
+      });
+    });
+  }, (x) => {
+    const _1=set_1(x);
+    return(_2) => _2==null?null:_1(_2.$0);
+  }, Map((v) => {
+    let _1;
+    return expectedValue!=null&&expectedValue.$==1&&(Equals(expectedValue.$0, v)&&(_1=expectedValue.$0,true))?null:Some(v);
+  }, var_1.View)];
+}
+function FileSetUnchecked(){
+  return _c_5.FileSetUnchecked;
+}
+function FileGetUnchecked(){
+  return _c_5.FileGetUnchecked;
+}
+function IntSetUnchecked(){
+  return _c_5.IntSetUnchecked;
+}
+function IntGetUnchecked(){
+  return _c_5.IntGetUnchecked;
+}
+function IntSetChecked(){
+  return _c_5.IntSetChecked;
+}
+function IntGetChecked(){
+  return _c_5.IntGetChecked;
+}
+function FloatSetUnchecked(){
+  return _c_5.FloatSetUnchecked;
+}
+function FloatGetUnchecked(){
+  return _c_5.FloatGetUnchecked;
+}
+function FloatSetChecked(){
+  return _c_5.FloatSetChecked;
+}
+function FloatGetChecked(){
+  return _c_5.FloatGetChecked;
+}
+function FloatApplyUnchecked(){
+  return _c_5.FloatApplyUnchecked;
+}
+function BoolCheckedApply(){
+  return _c_5.BoolCheckedApply;
+}
+function DateTimeApplyUnchecked(){
+  return _c_5.DateTimeApplyUnchecked;
+}
+function FileApplyUnchecked(){
+  return _c_5.FileApplyUnchecked;
+}
+function StringListApply(){
+  return _c_5.StringListApply;
 }
 class Elt_1 extends Doc {
   docNode_1;
@@ -3944,7 +4106,7 @@ function get_Empty(){
   return Anim(Empty_1());
 }
 function BatchUpdatesEnabled(){
-  return _c_5.BatchUpdatesEnabled;
+  return _c_6.BatchUpdatesEnabled;
 }
 function StartProcessor(procAsync){
   const st=[0];
@@ -4050,281 +4212,9 @@ function MapTreeReduce(mapping, defaultValue, reduction, array){
   }
   return(loop(0))(l);
 }
-class Event extends TemplateHole {
-  name;
-  fillWith;
-  get Value(){
-    return this.fillWith;
-  }
-  get Name(){
-    return this.name;
-  }
-}
-class AfterRender_1 extends TemplateHole {
-  name;
-  fillWith;
-  get Value(){
-    return this.fillWith;
-  }
-  get Name(){
-    return this.name;
-  }
-}
-class AfterRenderQ extends TemplateHole {
-  name;
-  key;
-  fillWith;
-  get Value(){
-    return this.fillWith;
-  }
-  get Name(){
-    return this.name;
-  }
-}
-function Choice1Of2(Item){
-  return{$:0, $0:Item};
-}
-function Choice2Of2(Item){
-  return{$:1, $0:Item};
-}
-class Updates_1 {
-  c;
-  s;
-  v;
-  static Create(v){
-    let var_1;
-    var_1=null;
-    var_1=Updates_1.New(v, null, () => {
-      let c;
-      c=var_1.s;
-      return c===null?(c=Copy(var_1.c()),var_1.s=c,WhenObsoleteRun(c, () => {
-        var_1.s=null;
-      }),c):c;
-    });
-    return var_1;
-  }
-  static New(Current, Snap, VarView){
-    return Create_2(Updates_1, {
-      c:Current, 
-      s:Snap, 
-      v:VarView
-    });
-  }
-}
-class ValueCollection extends Object_1 {
-  d;
-  GetEnumerator(){
-    return Get(map((kvp) => kvp.V, this.d));
-  }
-  constructor(d){
-    super();
-    this.d=d;
-  }
-}
-function New_4(PreviousNodes, Top){
-  return{PreviousNodes:PreviousNodes, Top:Top};
-}
-function get_Empty_1(){
-  return NodeSet(new HashSet("New_3"));
-}
-function FindAll(doc){
-  const q=[];
-  function recF(recI, _1){
-    while(true)
-      switch(recI){
-        case 0:
-          if(_1!=null&&_1.$==0){
-            const b=_1.$1;
-            const a=_1.$0;
-            recF(0, a);
-            _1=b;
-          }
-          else if(_1!=null&&_1.$==1){
-            const el=_1.$0;
-            _1=el;
-            recI=1;
-          }
-          else if(_1!=null&&_1.$==2){
-            const em=_1.$0;
-            _1=em.Current;
-          }
-          else if(_1!=null&&_1.$==6){
-            const x=_1.$0.Holes;
-            return(((a_1) =>(a_2) => {
-              iter_1(a_1, a_2);
-            })(loopEN))(x);
-          }
-          else return null;
-          break;
-        case 1:
-          q.push(_1);
-          _1=_1.Children;
-          recI=0;
-          break;
-      }
-  }
-  function loop(node){
-    return recF(0, node);
-  }
-  function loopEN(el){
-    return recF(1, el);
-  }
-  loop(doc);
-  return NodeSet(new HashSet("New_2", q));
-}
-function NodeSet(Item){
-  return{$:0, $0:Item};
-}
-function Filter(f, a){
-  return NodeSet(Filter_1(f, a.$0));
-}
-function Except(a, a_1){
-  return NodeSet(Except_1(a.$0, a_1.$0));
-}
-function ToArray(a){
-  return ToArray_2(a.$0);
-}
-function Intersect(a, a_1){
-  return NodeSet(Intersect_1(a.$0, a_1.$0));
-}
-function UseAnimations(){
-  return _c_8.UseAnimations;
-}
-function Actions(a){
-  return ConcatActions(choose((a_1) => a_1.$==1?Some(a_1.$0):null, ToArray_1(a.$0)));
-}
-function Finalize(a){
-  iter_1((a_1) => {
-    if(a_1.$==0)a_1.$0();
-  }, ToArray_1(a.$0));
-}
-function ConcatActions(xs){
-  const xs_1=ofSeqNonCopying(xs);
-  const m=length(xs_1);
-  if(m===0)return Const_1();
-  else if(m===1)return get(xs_1, 0);
-  else {
-    const dur=max(map((anim) => anim.Duration, xs_1));
-    const xs_2=map_1((x) => Prolong(dur, x), xs_1);
-    return Def(dur, (t) => {
-      iter_1((anim) => {
-        anim.Compute(t);
-      }, xs_2);
-    });
-  }
-}
-function List(a){
-  return a.$0;
-}
-function Const_1(v){
-  return Def(0, () => v);
-}
-function Def(d, f){
-  return{Compute:f, Duration:d};
-}
-function Prolong(nextDuration, anim){
-  const comp=anim.Compute;
-  const dur=anim.Duration;
-  const last=Create_1(() => anim.Compute(anim.Duration));
-  return{Compute:(t) => t>=dur?last.f():comp(t), Duration:nextDuration};
-}
-let _c_5=Lazy((_i) => class Proxy {
+let _c_5=Lazy((_i) => class Client {
   static {
     _c_5=_i(this);
-  }
-  static BatchUpdatesEnabled;
-  static {
-    this.BatchUpdatesEnabled=true;
-  }
-});
-function concat_3(o){
-  let r=[];
-  let k;
-  for(var k_1 in o)r.push.apply(r, o[k_1]);
-  return r;
-}
-let _c_6=Lazy((_i) => class $StartupCode_Abbrev {
-  static {
-    _c_6=_i(this);
-  }
-  static counter;
-  static {
-    this.counter=0;
-  }
-});
-let _c_7=Lazy((_i) => class $StartupCode_DomUtility {
-  static {
-    _c_7=_i(this);
-  }
-  static defaultWrap;
-  static wrapMap;
-  static rhtml;
-  static rtagName;
-  static rxhtmlTag;
-  static {
-    this.rxhtmlTag=new RegExp("<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\\w:]+)[^>]*)\\/>", "gi");
-    this.rtagName=new RegExp("<([\\w:]+)");
-    this.rhtml=new RegExp("<|&#?\\w+;");
-    const table=[1, "<table>", "</table>"];
-    let _1=Object.fromEntries([["option", [1, "<select multiple='multiple'>", "</select>"]], ["legend", [1, "<fieldset>", "</fieldset>"]], ["area", [1, "<map>", "</map>"]], ["param", [1, "<object>", "</object>"]], ["thead", table], ["tbody", table], ["tfoot", table], ["tr", [2, "<table><tbody>", "</tbody></table>"]], ["col", [2, "<table><colgroup>", "</colgoup></table>"]], ["td", [3, "<table><tbody><tr>", "</tr></tbody></table>"]]]);
-    this.wrapMap=_1;
-    this.defaultWrap=[0, "", ""];
-  }
-});
-let _c_8=Lazy((_i) => class $StartupCode_Animation {
-  static {
-    _c_8=_i(this);
-  }
-  static UseAnimations;
-  static CubicInOut;
-  static {
-    this.CubicInOut=Easing.Custom((t) => {
-      const t2=t*t;
-      return 3*t2-2*(t2*t);
-    });
-    this.UseAnimations=true;
-  }
-});
-function Append_1(x, y){
-  return x.$==0?y:y.$==0?x:{
-    $:2, 
-    $0:x, 
-    $1:y
-  };
-}
-function ToArray_1(xs){
-  const out=[];
-  function loop(xs_1){
-    while(true)
-      {
-        if(xs_1.$==1)return out.push(xs_1.$0);
-        else if(xs_1.$==2){
-          const y=xs_1.$1;
-          const x=xs_1.$0;
-          loop(x);
-          xs_1=y;
-        }
-        else return xs_1.$==3?iter_1((v) => {
-          out.push(v);
-        }, xs_1.$0):null;
-      }
-  }
-  loop(xs);
-  return out.slice(0);
-}
-function Concat_1(xs){
-  const x=ofSeqNonCopying(xs);
-  return TreeReduce(Empty_1(), Append_1, x);
-}
-function Empty_1(){
-  return _c_10.Empty;
-}
-function Clear(a){
-  a.splice(0, length(a));
-}
-let _c_9=Lazy((_i) => class Client {
-  static {
-    _c_9=_i(this);
   }
   static FloatApplyChecked;
   static FloatGetChecked;
@@ -4470,6 +4360,315 @@ let _c_9=Lazy((_i) => class Client {
     this.FloatApplyChecked=(v) => ApplyValue(g_7, s_7, v);
   }
 });
+class Event extends TemplateHole {
+  name;
+  fillWith;
+  get Value(){
+    return this.fillWith;
+  }
+  get Name(){
+    return this.name;
+  }
+}
+class AfterRender_1 extends TemplateHole {
+  name;
+  fillWith;
+  get Value(){
+    return this.fillWith;
+  }
+  get Name(){
+    return this.name;
+  }
+}
+class AfterRenderQ extends TemplateHole {
+  name;
+  key;
+  fillWith;
+  get Value(){
+    return this.fillWith;
+  }
+  get Name(){
+    return this.name;
+  }
+}
+function Choice1Of2(Item){
+  return{$:0, $0:Item};
+}
+function Choice2Of2(Item){
+  return{$:1, $0:Item};
+}
+class Updates_1 {
+  c;
+  s;
+  v;
+  static Create(v){
+    let var_1;
+    var_1=null;
+    var_1=Updates_1.New(v, null, () => {
+      let c;
+      c=var_1.s;
+      return c===null?(c=Copy(var_1.c()),var_1.s=c,WhenObsoleteRun(c, () => {
+        var_1.s=null;
+      }),c):c;
+    });
+    return var_1;
+  }
+  static New(Current, Snap, VarView){
+    return Create_2(Updates_1, {
+      c:Current, 
+      s:Snap, 
+      v:VarView
+    });
+  }
+}
+class ValueCollection extends Object_1 {
+  d;
+  GetEnumerator(){
+    return Get(map((kvp) => kvp.V, this.d));
+  }
+  constructor(d){
+    super();
+    this.d=d;
+  }
+}
+function New_4(PreviousNodes, Top){
+  return{PreviousNodes:PreviousNodes, Top:Top};
+}
+function get_Empty_1(){
+  return NodeSet(new HashSet("New_3"));
+}
+function FindAll(doc){
+  const q=[];
+  function recF(recI, _1){
+    while(true)
+      switch(recI){
+        case 0:
+          if(_1!=null&&_1.$==0){
+            const b=_1.$1;
+            const a=_1.$0;
+            recF(0, a);
+            _1=b;
+          }
+          else if(_1!=null&&_1.$==1){
+            const el=_1.$0;
+            _1=el;
+            recI=1;
+          }
+          else if(_1!=null&&_1.$==2){
+            const em=_1.$0;
+            _1=em.Current;
+          }
+          else if(_1!=null&&_1.$==6){
+            const x=_1.$0.Holes;
+            return(((a_1) =>(a_2) => {
+              iter_1(a_1, a_2);
+            })(loopEN))(x);
+          }
+          else return null;
+          break;
+        case 1:
+          q.push(_1);
+          _1=_1.Children;
+          recI=0;
+          break;
+      }
+  }
+  function loop(node){
+    return recF(0, node);
+  }
+  function loopEN(el){
+    return recF(1, el);
+  }
+  loop(doc);
+  return NodeSet(new HashSet("New_2", q));
+}
+function NodeSet(Item){
+  return{$:0, $0:Item};
+}
+function Filter(f, a){
+  return NodeSet(Filter_1(f, a.$0));
+}
+function Except(a, a_1){
+  return NodeSet(Except_1(a.$0, a_1.$0));
+}
+function ToArray(a){
+  return ToArray_2(a.$0);
+}
+function Intersect(a, a_1){
+  return NodeSet(Intersect_1(a.$0, a_1.$0));
+}
+function UseAnimations(){
+  return _c_9.UseAnimations;
+}
+function Actions(a){
+  return ConcatActions(choose((a_1) => a_1.$==1?Some(a_1.$0):null, ToArray_1(a.$0)));
+}
+function Finalize(a){
+  iter_1((a_1) => {
+    if(a_1.$==0)a_1.$0();
+  }, ToArray_1(a.$0));
+}
+function ConcatActions(xs){
+  const xs_1=ofSeqNonCopying(xs);
+  const m=length(xs_1);
+  if(m===0)return Const_1();
+  else if(m===1)return get(xs_1, 0);
+  else {
+    const dur=max(map((anim) => anim.Duration, xs_1));
+    const xs_2=map_1((x) => Prolong(dur, x), xs_1);
+    return Def(dur, (t) => {
+      iter_1((anim) => {
+        anim.Compute(t);
+      }, xs_2);
+    });
+  }
+}
+function List(a){
+  return a.$0;
+}
+function Const_1(v){
+  return Def(0, () => v);
+}
+function Def(d, f){
+  return{Compute:f, Duration:d};
+}
+function Prolong(nextDuration, anim){
+  const comp=anim.Compute;
+  const dur=anim.Duration;
+  const last=Create_1(() => anim.Compute(anim.Duration));
+  return{Compute:(t) => t>=dur?last.f():comp(t), Duration:nextDuration};
+}
+let _c_6=Lazy((_i) => class Proxy {
+  static {
+    _c_6=_i(this);
+  }
+  static BatchUpdatesEnabled;
+  static {
+    this.BatchUpdatesEnabled=true;
+  }
+});
+function concat_3(o){
+  let r=[];
+  let k;
+  for(var k_1 in o)r.push.apply(r, o[k_1]);
+  return r;
+}
+let _c_7=Lazy((_i) => class $StartupCode_Abbrev {
+  static {
+    _c_7=_i(this);
+  }
+  static counter;
+  static {
+    this.counter=0;
+  }
+});
+function Clear(a){
+  a.splice(0, length(a));
+}
+function isBlank(s){
+  return forall(IsWhiteSpace, s);
+}
+class CheckedInput {
+  get Input(){
+    return this.$==1?this.$0:this.$==2?this.$0:this.$1;
+  }
+  static Blank(inputText){
+    return Create_2(CheckedInput, {$:2, $0:inputText});
+  }
+  static Invalid(inputText){
+    return Create_2(CheckedInput, {$:1, $0:inputText});
+  }
+  static Valid(value, inputText){
+    return Create_2(CheckedInput, {
+      $:0, 
+      $0:value, 
+      $1:inputText
+    });
+  }
+  $;
+  $0;
+  $1;
+}
+let _c_8=Lazy((_i) => class $StartupCode_DomUtility {
+  static {
+    _c_8=_i(this);
+  }
+  static defaultWrap;
+  static wrapMap;
+  static rhtml;
+  static rtagName;
+  static rxhtmlTag;
+  static {
+    this.rxhtmlTag=new RegExp("<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\\w:]+)[^>]*)\\/>", "gi");
+    this.rtagName=new RegExp("<([\\w:]+)");
+    this.rhtml=new RegExp("<|&#?\\w+;");
+    const table=[1, "<table>", "</table>"];
+    let _1=Object.fromEntries([["option", [1, "<select multiple='multiple'>", "</select>"]], ["legend", [1, "<fieldset>", "</fieldset>"]], ["area", [1, "<map>", "</map>"]], ["param", [1, "<object>", "</object>"]], ["thead", table], ["tbody", table], ["tfoot", table], ["tr", [2, "<table><tbody>", "</tbody></table>"]], ["col", [2, "<table><colgroup>", "</colgoup></table>"]], ["td", [3, "<table><tbody><tr>", "</tr></tbody></table>"]]]);
+    this.wrapMap=_1;
+    this.defaultWrap=[0, "", ""];
+  }
+});
+let _c_9=Lazy((_i) => class $StartupCode_Animation {
+  static {
+    _c_9=_i(this);
+  }
+  static UseAnimations;
+  static CubicInOut;
+  static {
+    this.CubicInOut=Easing.Custom((t) => {
+      const t2=t*t;
+      return 3*t2-2*(t2*t);
+    });
+    this.UseAnimations=true;
+  }
+});
+function Append_1(x, y){
+  return x.$==0?y:y.$==0?x:{
+    $:2, 
+    $0:x, 
+    $1:y
+  };
+}
+function ToArray_1(xs){
+  const out=[];
+  function loop(xs_1){
+    while(true)
+      {
+        if(xs_1.$==1)return out.push(xs_1.$0);
+        else if(xs_1.$==2){
+          const y=xs_1.$1;
+          const x=xs_1.$0;
+          loop(x);
+          xs_1=y;
+        }
+        else return xs_1.$==3?iter_1((v) => {
+          out.push(v);
+        }, xs_1.$0):null;
+      }
+  }
+  loop(xs);
+  return out.slice(0);
+}
+function Concat_1(xs){
+  const x=ofSeqNonCopying(xs);
+  return TreeReduce(Empty_1(), Append_1, x);
+}
+function Empty_1(){
+  return _c_10.Empty;
+}
+function IsWhiteSpace(c){
+  return c.match(new RegExp("\\s"))!==null;
+}
+function TryParse_1(s){
+  const d=Date.parse(s);
+  return isNaN(d)?null:Some(d);
+}
+function TryParse_2(s, min, max_1, r){
+  const x=+s;
+  const ok=x===x-x%1&&x>=min&&x<=max_1;
+  if(ok)r.set(x);
+  return ok;
+}
 class KeyNotFoundException extends Error {
   constructor(i, _1){
     if(i=="New"){
@@ -4509,137 +4708,6 @@ function Intersect_1(a, b){
   const set_1=new HashSet("New_2", ToArray_2(a));
   set_1.IntersectWith(ToArray_2(b));
   return set_1;
-}
-function ApplyValue(get_1, set_1, var_1){
-  let expectedValue;
-  expectedValue=null;
-  return[(el) => {
-    const onChange=() => {
-      var_1.UpdateMaybe((v) => {
-        let _1;
-        expectedValue=get_1(el);
-        return expectedValue!=null&&expectedValue.$==1&&(!Equals(expectedValue.$0, v)&&(_1=[expectedValue, expectedValue.$0],true))?_1[0]:null;
-      });
-    };
-    el.addEventListener("change", onChange);
-    el.addEventListener("input", onChange);
-    el.addEventListener("keypress", onChange);
-  }, (x) => {
-    const _1=set_1(x);
-    return(_2) => _2==null?null:_1(_2.$0);
-  }, Map((v) => {
-    let _1;
-    return expectedValue!=null&&expectedValue.$==1&&(Equals(expectedValue.$0, v)&&(_1=expectedValue.$0,true))?null:Some(v);
-  }, var_1.View)];
-}
-function StringSet(){
-  return _c_9.StringSet;
-}
-function StringGet(){
-  return _c_9.StringGet;
-}
-function StringListSet(){
-  return _c_9.StringListSet;
-}
-function StringListGet(){
-  return _c_9.StringListGet;
-}
-function DateTimeSetUnchecked(){
-  return _c_9.DateTimeSetUnchecked;
-}
-function DateTimeGetUnchecked(){
-  return _c_9.DateTimeGetUnchecked;
-}
-function FileApplyValue(get_1, set_1, var_1){
-  let expectedValue;
-  expectedValue=null;
-  return[(el) => {
-    el.addEventListener("change", () => {
-      var_1.UpdateMaybe((v) => {
-        let _1;
-        expectedValue=get_1(el);
-        return expectedValue!=null&&expectedValue.$==1&&(expectedValue.$0!==v&&(_1=[expectedValue, expectedValue.$0],true))?_1[0]:null;
-      });
-    });
-  }, (x) => {
-    const _1=set_1(x);
-    return(_2) => _2==null?null:_1(_2.$0);
-  }, Map((v) => {
-    let _1;
-    return expectedValue!=null&&expectedValue.$==1&&(Equals(expectedValue.$0, v)&&(_1=expectedValue.$0,true))?null:Some(v);
-  }, var_1.View)];
-}
-function FileSetUnchecked(){
-  return _c_9.FileSetUnchecked;
-}
-function FileGetUnchecked(){
-  return _c_9.FileGetUnchecked;
-}
-function IntSetUnchecked(){
-  return _c_9.IntSetUnchecked;
-}
-function IntGetUnchecked(){
-  return _c_9.IntGetUnchecked;
-}
-function IntSetChecked(){
-  return _c_9.IntSetChecked;
-}
-function IntGetChecked(){
-  return _c_9.IntGetChecked;
-}
-function FloatSetUnchecked(){
-  return _c_9.FloatSetUnchecked;
-}
-function FloatGetUnchecked(){
-  return _c_9.FloatGetUnchecked;
-}
-function FloatSetChecked(){
-  return _c_9.FloatSetChecked;
-}
-function FloatGetChecked(){
-  return _c_9.FloatGetChecked;
-}
-function StringApply(){
-  return _c_9.StringApply;
-}
-function FloatApplyUnchecked(){
-  return _c_9.FloatApplyUnchecked;
-}
-function BoolCheckedApply(){
-  return _c_9.BoolCheckedApply;
-}
-function DateTimeApplyUnchecked(){
-  return _c_9.DateTimeApplyUnchecked;
-}
-function FileApplyUnchecked(){
-  return _c_9.FileApplyUnchecked;
-}
-function StringListApply(){
-  return _c_9.StringListApply;
-}
-function isBlank(s){
-  return forall(IsWhiteSpace, s);
-}
-class CheckedInput {
-  get Input(){
-    return this.$==1?this.$0:this.$==2?this.$0:this.$1;
-  }
-  static Blank(inputText){
-    return Create_2(CheckedInput, {$:2, $0:inputText});
-  }
-  static Invalid(inputText){
-    return Create_2(CheckedInput, {$:1, $0:inputText});
-  }
-  static Valid(value, inputText){
-    return Create_2(CheckedInput, {
-      $:0, 
-      $0:value, 
-      $1:inputText
-    });
-  }
-  $;
-  $0;
-  $1;
 }
 function Children(elem, delims){
   let n;
@@ -4704,19 +4772,6 @@ function DocChildren(node){
 }
 function DomNodes(Item){
   return{$:0, $0:Item};
-}
-function IsWhiteSpace(c){
-  return c.match(new RegExp("\\s"))!==null;
-}
-function TryParse_1(s){
-  const d=Date.parse(s);
-  return isNaN(d)?null:Some(d);
-}
-function TryParse_2(s, min, max_1, r){
-  const x=+s;
-  const ok=x===x-x%1&&x>=min&&x<=max_1;
-  if(ok)r.set(x);
-  return ok;
 }
 function Create_1(f){
   return New_5(false, f, forceLazy);
